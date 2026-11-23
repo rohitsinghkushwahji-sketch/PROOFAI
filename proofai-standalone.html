@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProofAI – Check what your AI told you</title>
+<meta name="description" content="Paste text from ChatGPT, Gemini, Claude or any article. ProofAI separates supported claims from contradicted, unverified, misleading, outdated and opinion-based ones.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0f1b33; --muted:#5a6784; --line:#dbe3f2; --bg:#ffffff; --tint:#f2f6ff;
+  --blue:#1d4ed8; --blue-d:#173ea8; --blue-l:#e4ecff;
+  --red:#b42318; --red-l:#fdecea;
+  --amber:#8a5a00; --amber-l:#fff3d6;
+  --slate:#475569; --slate-l:#eceff4;
+  --violet:#5b4bb7; --violet-l:#eeebfb;
+  --brown:#9a4a12; --brown-l:#fbeadd;
+  --serif:"Source Serif 4",Georgia,serif;
+  --sans:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--bg);line-height:1.6;font-size:16px}
+h1,h2,h3{font-family:var(--serif);line-height:1.15;margin:0;font-weight:600;letter-spacing:-.01em}
+h1{font-size:clamp(2rem,4.6vw,3.2rem)}
+h2{font-size:clamp(1.5rem,3vw,2.1rem)}
+h3{font-size:1.1rem;font-family:var(--sans);font-weight:600}
+p{margin:0}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px;border-radius:6px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+.muted{color:var(--muted)} .small{font-size:.85rem}
+
+/* nav */
+.nav{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.95);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+.nav-in{display:flex;align-items:center;justify-content:space-between;height:64px}
+.logo{display:inline-flex;align-items:center;gap:10px;font-weight:700;font-size:1.15rem;color:var(--ink);text-decoration:none}
+.mark{display:grid;place-items:center;width:30px;height:30px;background:var(--blue);color:#fff;border-radius:8px;font-family:var(--serif);font-size:1.1rem}
+.menu{display:flex;align-items:center;gap:26px}
+.menu a:not(.btn){color:var(--ink);text-decoration:none;font-weight:500;font-size:.95rem}
+.menu a:not(.btn):hover{color:var(--blue)}
+.nav-toggle{display:none;background:none;border:1px solid var(--line);border-radius:8px;padding:8px 14px;font:inherit;color:var(--ink);cursor:pointer}
+
+/* buttons */
+.btn{display:inline-block;background:var(--blue);color:#fff;border:1px solid var(--blue);border-radius:10px;padding:11px 22px;font:600 .95rem var(--sans);text-decoration:none;cursor:pointer;transition:background .15s}
+.btn:hover{background:var(--blue-d)}
+.btn:disabled{opacity:.6;cursor:wait}
+.btn-sm{padding:8px 16px}
+.btn.ghost{background:#fff;color:var(--blue)}
+.btn.ghost:hover{background:var(--blue-l)}
+
+/* hero */
+.hero{background:var(--tint);border-bottom:1px solid var(--line);padding:56px 0 64px}
+.hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start}
+.lead{font-size:1.1rem;color:var(--muted);margin:18px 0 20px;max-width:34em}
+.ticks{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.ticks li{padding-left:28px;position:relative;font-weight:500}
+.ticks li::before{content:"";position:absolute;left:0;top:.35em;width:16px;height:16px;border-radius:50%;background:var(--blue) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 8.5l2.2 2.2L11.5 6' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/16px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 8px 30px rgba(29,78,216,.08)}
+.panel-title{display:block;font-weight:600;margin-bottom:10px}
+textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:14px;font:inherit;color:var(--ink);resize:vertical;min-height:180px}
+textarea:focus{outline:3px solid var(--blue-l);border-color:var(--blue)}
+.panel-row{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}
+.actions{display:flex;gap:10px}
+.status{margin-top:14px;padding:12px 14px;border-radius:10px;background:var(--amber-l);color:#5c3b00;font-size:.92rem}
+.status.error{background:var(--red-l);color:#7a1a12}
+
+/* sections */
+.section{padding:72px 0}
+.section.alt{background:var(--tint);border-top:1px solid var(--line)}
+.section-lead{color:var(--muted);margin:12px 0 32px;max-width:40em}
+.results{padding-top:48px;padding-bottom:16px}
+.results h2{margin-bottom:20px}
+
+/* feature list */
+.feat-list{display:grid;grid-template-columns:repeat(2,1fr);gap:0 40px}
+.feat{display:grid;grid-template-columns:116px 1fr;gap:16px;padding:20px 0;border-top:1px solid var(--line);align-items:start}
+.feat p{color:var(--muted);font-size:.95rem;margin-top:4px}
+
+/* status colours: each also has a text label and distinct underline style */
+.chip{display:inline-block;text-align:center;padding:4px 10px;border-radius:999px;font-size:.8rem;font-weight:600;white-space:nowrap}
+.c-supported{background:var(--blue-l);color:var(--blue-d)}
+.c-contradicted{background:var(--red-l);color:var(--red)}
+.c-unverified{background:var(--violet-l);color:var(--violet)}
+.c-misleading{background:var(--amber-l);color:var(--amber)}
+.c-opinion{background:var(--slate-l);color:var(--slate)}
+.c-outdated{background:var(--brown-l);color:var(--brown)}
+.c-source{background:#fff;color:var(--ink);border:1px solid var(--line)}
+
+/* report */
+.report{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.rep-head{display:grid;grid-template-columns:1.2fr 1fr;gap:28px;padding:24px;border-bottom:1px solid var(--line)}
+.tally{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tally div{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.tally b{display:block;font-size:1.5rem;font-family:var(--serif)}
+.tally span{font-size:.8rem;color:var(--muted)}
+.note{background:var(--violet-l);color:#3b2f8a;border-radius:10px;padding:12px 14px;font-size:.9rem}
+.rep-body{display:grid;grid-template-columns:1.05fr 1fr;gap:0}
+.passage{padding:24px;border-right:1px solid var(--line);font-family:var(--serif);font-size:1.08rem;line-height:1.9}
+.passage h4,.claims h4,.sources h4{font:600 .9rem var(--sans);color:var(--muted);margin:0 0 12px}
+.hl{padding:0 1px;border-radius:2px;cursor:pointer}
+.hl.supported{background:var(--blue-l);border-bottom:2px solid var(--blue)}
+.hl.contradicted{background:var(--red-l);border-bottom:2px wavy var(--red);text-decoration:line-through;text-decoration-color:var(--red)}
+.hl.unverified{background:var(--violet-l);border-bottom:2px dashed var(--violet)}
+.hl.misleading{background:var(--amber-l);border-bottom:2px dotted var(--amber)}
+.hl.opinion{background:var(--slate-l);border-bottom:2px solid var(--slate)}
+.hl.outdated{background:var(--brown-l);border-bottom:2px double var(--brown)}
+.claims{padding:24px;display:grid;gap:12px;align-content:start}
+.claim{border:1px solid var(--line);border-left-width:4px;border-radius:10px;padding:12px 14px}
+.claim.supported{border-left-color:var(--blue)} .claim.contradicted{border-left-color:var(--red)}
+.claim.unverified{border-left-color:var(--violet)} .claim.misleading{border-left-color:var(--amber)}
+.claim.opinion{border-left-color:var(--slate)} .claim.outdated{border-left-color:var(--brown)}
+.claim.flash{box-shadow:0 0 0 3px var(--blue-l)}
+.claim p{margin-top:6px;font-weight:500}
+.claim small{display:block;color:var(--muted);margin-top:6px}
+.sources{padding:24px;border-top:1px solid var(--line)}
+.src{display:grid;grid-template-columns:1fr 150px;gap:14px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.src:first-of-type{border-top:0}
+.src small{color:var(--muted);display:block}
+.meter{height:8px;background:var(--slate-l);border-radius:99px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--blue)}
+.meter-label{font-size:.78rem;color:var(--muted);margin-top:4px}
+
+/* footer */
+.footer{border-top:1px solid var(--line);padding:36px 0}
+.foot-in{display:grid;grid-template-columns:1fr 1.4fr auto;gap:28px;align-items:start}
+
+/* responsive */
+@media (max-width:900px){
+  .hero-grid,.rep-head,.rep-body,.foot-in{grid-template-columns:1fr}
+  .feat-list{grid-template-columns:1fr}
+  .passage{border-right:0;border-bottom:1px solid var(--line)}
+}
+@media (max-width:760px){
+  .nav-toggle{display:block}
+  .menu{display:none;position:absolute;top:64px;left:0;right:0;background:#fff;border-bottom:1px solid var(--line);flex-direction:column;align-items:flex-start;padding:16px 20px;gap:14px}
+  .menu.open{display:flex}
+  .feat{grid-template-columns:1fr;gap:8px}
+  .feat .chip{justify-self:start}
+  .tally{grid-template-columns:repeat(2,1fr)}
+  .src{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+
+/* ===== v2: interactive demo additions ===== */
+.field-error{margin:10px 0 0;padding:10px 12px;border-radius:10px;background:var(--red-l);color:#7a1a12;font-size:.9rem}
+textarea[aria-invalid="true"]{border-color:var(--red);outline:3px solid var(--red-l)}
+.btn.ghost:disabled{opacity:.45;cursor:not-allowed;background:#fff}
+.btn.busy{cursor:wait}
+.demo-hint{margin-top:12px}
+.count-warn{color:var(--amber);font-weight:600}
+
+/* loader */
+.loader{display:flex;align-items:center;gap:18px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;margin-bottom:8px}
+.loader[hidden]{display:none}
+.spinner{flex:none;width:40px;height:40px;border:4px solid var(--blue-l);border-top-color:var(--blue);border-radius:50%;animation:spin .9s linear infinite}
+.loader-bar{width:min(320px,60vw);height:6px;background:var(--blue-l);border-radius:99px;margin:10px 0 8px;overflow:hidden}
+.loader-bar i{display:block;height:100%;width:0;background:var(--blue);border-radius:99px;animation:fill 2.6s ease-out forwards}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fill{to{width:100%}}
+@media (prefers-reduced-motion:reduce){.spinner{animation:none;border-top-color:var(--blue-l);border-color:var(--blue)}.loader-bar i{animation:none;width:100%}}
+
+/* demo banner + tally */
+.demo-banner{background:var(--amber-l);color:#5c3b00;padding:12px 24px;font-size:.92rem;border-bottom:1px solid var(--line)}
+.tally .total{background:var(--blue-l);border-color:var(--blue-l)}
+@media (min-width:761px){.tally{grid-template-columns:repeat(4,1fr)}}
+
+/* confidence */
+.conf{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:.8rem;color:var(--muted)}
+.conf .meter{flex:1;max-width:140px}
+.conf strong{color:var(--ink);font-weight:600}
+.conf-note{padding:14px 24px;border-top:1px solid var(--line);background:var(--tint);font-size:.9rem;color:var(--muted)}
+.conf-note strong{color:var(--ink)}
+
+/* sources */
+.tag-sample{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;background:var(--slate-l);color:var(--slate);font-size:.72rem;font-weight:600;vertical-align:middle}
+.report .src:first-of-type{border-top:0}
+
+/* ===== v3: design polish ===== */
+.hero{background:linear-gradient(180deg,#eaf1ff 0%,#f6f9ff 100%);position:relative}
+.hero::before{content:"";position:absolute;inset:0;background-image:radial-gradient(#c6d6f7 1px,transparent 1px);background-size:22px 22px;opacity:.55;pointer-events:none}
+.hero .wrap{position:relative}
+.panel{border-top:4px solid var(--blue)}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px}
+.legend-cap{margin-top:10px;font-size:.88rem;color:var(--muted)}
+.feat-list{gap:16px}
+.feat{border:1px solid var(--line);border-radius:14px;padding:20px;background:#fff;transition:border-color .15s,box-shadow .15s}
+.feat:hover{border-color:var(--blue);box-shadow:0 6px 20px rgba(29,78,216,.08)}
+.section.alt .report{box-shadow:0 10px 40px rgba(29,78,216,.07)}
+.tally .total{grid-column:span 2}
+.tally b{color:var(--blue-d)}
+.hl.contradicted{text-decoration:none}
+.passage{background:#fbfcff}
+.footer{background:#0f2a6b;border-top:0;color:#dbe6ff}
+.footer .logo{color:#fff}
+.footer .mark{background:#fff;color:var(--blue-d)}
+.footer .muted{color:#b3c5f0}
+@media (max-width:760px){.feat{padding:16px}.hero{padding:36px 0 44px}.actions{width:100%}.actions .btn{flex:1}}
+
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="logo" href="#top" aria-label="ProofAI home"><span class="mark" aria-hidden="true">P</span>ProofAI</a>
+    <button class="nav-toggle" aria-expanded="false" aria-controls="menu">Menu</button>
+    <nav id="menu" class="menu" aria-label="Main">
+      <a href="#analyze">Analyze</a>
+      <a href="#features">What it checks</a>
+      <a href="#sample">Sample report</a>
+      <a class="btn btn-sm" href="#analyze">Try ProofAI</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <h1>AI sounds sure of itself. ProofAI checks whether it should.</h1>
+        <p class="lead">Paste text from ChatGPT, Gemini, Claude or an article. ProofAI breaks it into claims and tells you which are supported, which are contradicted, and which simply can’t be verified.</p>
+        <ul class="ticks">
+          <li>Unverified never gets labelled as false</li>
+          <li>Every verdict comes with its reason</li>
+          <li>Opinions are kept apart from facts</li>
+        </ul>
+        <div class="legend" aria-label="The six labels">
+          <span class="chip c-supported">Supported</span><span class="chip c-contradicted">Contradicted</span><span class="chip c-unverified">Unverified</span>
+          <span class="chip c-misleading">Misleading</span><span class="chip c-opinion">Opinion</span><span class="chip c-outdated">Outdated</span>
+        </div>
+        <p class="legend-cap">Six labels, kept separate. “Unverified” never means “false”.</p>
+      </div>
+
+      <div class="panel" id="analyze">
+        <label for="input" class="panel-title">Text to analyze</label>
+        <textarea id="input" rows="9" maxlength="8000" aria-describedby="count field-error" placeholder="Paste an AI answer, article excerpt or any passage here…"></textarea>
+        <p id="field-error" class="field-error" role="alert" hidden></p>
+        <div class="panel-row">
+          <span id="count" class="muted">0 / 8000 characters</span>
+          <div class="actions">
+            <button type="button" class="btn ghost" id="fill">Use example</button>
+            <button type="button" class="btn ghost" id="clear" disabled>Clear text</button>
+            <button type="button" class="btn" id="analyze-btn">Analyze Knowledge</button>
+          </div>
+        </div>
+        <p class="muted small demo-hint">Demo mode: results are placeholders. No fact-checking happens yet.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap results" id="results" hidden>
+    <h2>Your report</h2>
+    <div id="loader" class="loader" role="status" aria-live="polite" hidden>
+      <div class="spinner" aria-hidden="true"></div>
+      <div>
+        <strong id="loader-step">Preparing…</strong>
+        <div class="loader-bar" aria-hidden="true"><i></i></div>
+        <small class="muted">Demo animation only. Nothing is being verified.</small>
+      </div>
+    </div>
+    <div id="report"></div>
+  </section>
+
+  <section class="section" id="features">
+    <div class="wrap">
+      <h2>Seven checks, kept separate on purpose</h2>
+      <p class="section-lead">A claim that nobody can confirm is not the same as a claim that is wrong. ProofAI shows the difference every time.</p>
+      <div class="feat-list">
+        <article class="feat"><span class="chip c-supported">Supported</span><div><h3>Evidence-supported claims</h3><p>Claims backed by named, checkable evidence, shown with what supports them.</p></div></article>
+        <article class="feat"><span class="chip c-contradicted">Contradicted</span><div><h3>Contradicted claims</h3><p>Claims that reliable evidence directly disproves, with the correction.</p></div></article>
+        <article class="feat"><span class="chip c-unverified">Unverified</span><div><h3>Unverified claims</h3><p>Not enough evidence either way. Flagged as uncertain, never as false.</p></div></article>
+        <article class="feat"><span class="chip c-misleading">Misleading</span><div><h3>Misleading or missing context</h3><p>Technically true statements that leave out what a reader needs to know.</p></div></article>
+        <article class="feat"><span class="chip c-opinion">Opinion</span><div><h3>Opinions and assumptions</h3><p>Judgements and hidden premises, kept out of the fact count.</p></div></article>
+        <article class="feat"><span class="chip c-outdated">Outdated</span><div><h3>Outdated information</h3><p>Claims that were once right but have since changed, with the date of change.</p></div></article>
+        <article class="feat"><span class="chip c-source">Sources</span><div><h3>Source reliability</h3><p>How trustworthy each cited source is, and why that rating was given.</p></div></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section alt" id="sample">
+    <div class="wrap">
+      <h2>What a report looks like</h2>
+      <p class="section-lead">Illustrative example only. The claims and sources below are written to show the layout, not the result of a real analysis.</p>
+      <div id="sample-report"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap foot-in">
+    <div><a class="logo" href="#top"><span class="mark" aria-hidden="true">P</span>ProofAI</a><p class="muted">Knowledge quality analysis for AI-generated text.</p></div>
+    <p class="muted small">ProofAI supports your judgement, it does not replace it. Check important decisions against primary sources.</p>
+    <p class="muted small">© 2026 ProofAI</p>
+  </div>
+</footer>
+
+<script>
+/* ProofAI frontend v2 (DEMO). No AI, no network calls, no real verification.
+   Mock results are generated from the pasted text and clearly labelled.
+   The same data shape will later come from the FastAPI backend. */
+
+const LABELS = {
+  supported: "Supported",
+  contradicted: "Contradicted",
+  unverified: "Unverified",
+  misleading: "Misleading / missing context",
+  opinion: "Opinion / assumption",
+  outdated: "Outdated",
+};
+const MAX_CHARS = 8000, MIN_CHARS = 15, MAX_CLAIMS = 12;
+const EXAMPLE = "Humans use only 10% of their brains. Pluto is the ninth planet. Intermittent fasting is the best diet. A new study shows this supplement cuts anxiety by 40%.";
+
+/* Illustrative sample for the "What a report looks like" section. */
+const SAMPLE = {
+  demo: true,
+  banner: "Illustrative sample. These claims and sources were written to show the layout, not produced by an analysis.",
+  summary: "Of 6 claims, 1 is supported, 1 is contradicted, and 4 need caution. Unverified claims are uncertain, not false.",
+  claims: [
+    { id: 1, status: "supported", claim: "The Eiffel Tower is in Paris.", reason: "Confirmed by multiple independent, authoritative references.", evidence: "Encyclopedias, official tourism records", conf: 92 },
+    { id: 2, status: "contradicted", claim: "Humans use only 10% of their brains.", reason: "Brain imaging shows activity across virtually the whole brain over a day.", evidence: "Neuroscience reviews", conf: 88 },
+    { id: 3, status: "outdated", claim: "Pluto is the ninth planet.", reason: "True before 2006. It was reclassified as a dwarf planet that year.", evidence: "IAU 2006 resolution", conf: 90 },
+    { id: 4, status: "misleading", claim: "A supplement cut anxiety by 40% in a study.", reason: "Missing context: sample size, control group and funding are not stated.", evidence: "Needs the original study", conf: 62 },
+    { id: 5, status: "unverified", claim: "Four-day weeks raise output by a third at most firms.", reason: "No source given and no matching evidence found. Uncertain, not shown to be false.", evidence: "None found", conf: 45 },
+    { id: 6, status: "opinion", claim: "Intermittent fasting is the best diet.", reason: "“Best” depends on goals and health. Not a checkable fact.", evidence: "Not applicable", conf: 80 },
+  ],
+  sources: [
+    { name: "Peer-reviewed journal review", note: "Example of a high-reliability source", score: 90, label: "High reliability (sample)" },
+    { name: "Company blog post", note: "Example of a source with a stake in the result", score: 35, label: "Low reliability (sample)" },
+    { name: "No source given", note: "Example of an unsourced claim", score: 0, label: "Cannot be rated (sample)" },
+  ],
+};
+
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const level = (n) => (n >= 75 ? "High" : n >= 50 ? "Medium" : "Low");
+
+/* ---------- mock analysis (placeholder logic, NOT fact-checking) ---------- */
+function splitClaims(text) {
+  const parts = (text.match(/[^.!?\n]+[.!?]*/g) || []).map((s) => s.trim()).filter((s) => s.length >= 8);
+  return (parts.length ? parts : [text.trim()]).slice(0, MAX_CLAIMS);
+}
+
+function buildMock(text) {
+  const cycle = ["unverified", "supported", "opinion", "contradicted", "misleading", "outdated"];
+  const claims = splitClaims(text).map((c, i) => ({
+    id: i + 1,
+    status: cycle[i % cycle.length],
+    claim: c,
+    reason: "Placeholder label. No evidence was searched or checked for this claim.",
+    evidence: "None checked (demo)",
+    conf: 35 + ((c.length * 13 + i * 17) % 56),
+  }));
+  return {
+    demo: true,
+    banner: "DEMO RESULT. Labels below are assigned by placeholder logic, not by fact-checking. Do not treat any label as a verdict.",
+    summary: `${claims.length} sentence${claims.length === 1 ? "" : "s"} were split into claims. Labels are placeholders so you can preview the report layout.`,
+    claims,
+    sources: [
+      { name: "Sample source A", note: "Placeholder. Not retrieved from the web", score: 85, label: "Example rating (sample)" },
+      { name: "Sample source B", note: "Placeholder. Not retrieved from the web", score: 40, label: "Example rating (sample)" },
+      { name: "Sample source C", note: "Placeholder. Not retrieved from the web", score: 0, label: "Cannot be rated (sample)" },
+    ],
+  };
+}
+
+/* ---------- report rendering ---------- */
+function renderReport(data, mount) {
+  const n = (k) => data.claims.filter((c) => c.status === k).length;
+  const tiles = [["total", data.claims.length, "Total claims detected"]]
+    .concat(Object.keys(LABELS).map((k) => [k, n(k), LABELS[k]]))
+    .map(([k, v, l]) => `<div class="${k === "total" ? "total" : ""}"><b>${v}</b><span>${l}</span></div>`)
+    .join("");
+
+  const passage = data.claims
+    .map((c) => `<mark class="hl ${c.status}" data-claim="${c.id}" tabindex="0" title="${LABELS[c.status]}">${esc(c.claim)}</mark>`)
+    .join(" ");
+
+  const claims = data.claims
+    .map(
+      (c) => `<article class="claim ${c.status}" id="${mount.id}-c${c.id}">
+        <span class="chip c-${c.status}">${LABELS[c.status]}</span>
+        <p>${esc(c.claim)}</p>
+        <small>${esc(c.reason)}</small>
+        <small>Evidence: ${esc(c.evidence)}</small>
+        <div class="conf"><span>Analysis confidence: <strong>${level(c.conf)}</strong></span>
+          <div class="meter" aria-hidden="true"><i style="width:${c.conf}%"></i></div></div>
+      </article>`
+    )
+    .join("");
+
+  const sources = data.sources
+    .map(
+      (s) => `<div class="src">
+        <div><strong>${esc(s.name)}</strong><span class="tag-sample">Sample</span><small>${esc(s.note)}</small></div>
+        <div><div class="meter" aria-hidden="true"><i style="width:${s.score}%"></i></div><div class="meter-label">${esc(s.label)}</div></div>
+      </div>`
+    )
+    .join("");
+
+  mount.innerHTML = `<div class="report">
+    <div class="demo-banner" role="note">${esc(data.banner)}</div>
+    <div class="rep-head">
+      <div><h3>Analysis summary</h3><p class="muted" style="margin-top:8px">${esc(data.summary)}</p>
+        <p class="note" style="margin-top:14px">Unverified means “not enough evidence either way”. It is never the same as false.</p></div>
+      <div class="tally">${tiles}</div>
+    </div>
+    <div class="rep-body">
+      <div class="passage"><h4>Your text, with claims marked</h4>${passage}</div>
+      <div class="claims"><h4>Claim by claim</h4>${claims}</div>
+    </div>
+    <div class="conf-note"><strong>About confidence:</strong> it shows how sure the analysis is about its own label. It is <strong>not</strong> the probability that a claim is true.</div>
+    <div class="sources"><h4>Source reliability (sample sources)</h4>${sources}</div>
+  </div>`;
+
+  mount.querySelectorAll(".hl").forEach((el) => {
+    const go = () => {
+      const card = document.getElementById(`${mount.id}-c${el.dataset.claim}`);
+      card.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      card.classList.add("flash");
+      setTimeout(() => card.classList.remove("flash"), 1200);
+    };
+    el.addEventListener("click", go);
+    el.addEventListener("keydown", (e) => e.key === "Enter" && go());
+  });
+}
+
+/* ---------- page wiring ---------- */
+const input = $("#input"), btn = $("#analyze-btn"), clearBtn = $("#clear"), fillBtn = $("#fill");
+const errBox = $("#field-error"), countEl = $("#count"), results = $("#results"), loader = $("#loader"), report = $("#report");
+let busy = false, timers = [];
+
+function showError(msg) {
+  errBox.hidden = !msg;
+  errBox.textContent = msg || "";
+  input.setAttribute("aria-invalid", msg ? "true" : "false");
+}
+
+function updateCount() {
+  const len = input.value.length;
+  countEl.textContent = `${len.toLocaleString()} / ${MAX_CHARS.toLocaleString()} characters`;
+  countEl.classList.toggle("count-warn", len > MAX_CHARS * 0.9);
+  clearBtn.disabled = busy || len === 0;
+}
+
+input.addEventListener("input", () => { updateCount(); if (input.value.trim()) showError(""); });
+
+fillBtn.addEventListener("click", () => {
+  if (busy) return;
+  input.value = EXAMPLE; updateCount(); showError(""); input.focus();
+});
+
+clearBtn.addEventListener("click", () => {
+  timers.forEach(clearTimeout); timers = []; busy = false;
+  input.value = ""; showError("");
+  results.hidden = true; loader.hidden = true; report.innerHTML = "";
+  setBusy(false); updateCount(); input.focus();
+});
+
+function setBusy(on) {
+  busy = on;
+  btn.disabled = on; fillBtn.disabled = on; input.readOnly = on;
+  btn.classList.toggle("busy", on);
+  btn.textContent = on ? "Analyzing…" : "Analyze Knowledge";
+  updateCount();
+}
+
+btn.addEventListener("click", () => {
+  const text = input.value.trim();
+  if (!text) { showError("Paste some text first. There is nothing to analyze yet."); input.focus(); return; }
+  if (text.length < MIN_CHARS) { showError(`Add a little more. Enter at least ${MIN_CHARS} characters.`); input.focus(); return; }
+  showError("");
+  setBusy(true);
+
+  results.hidden = false; report.innerHTML = ""; loader.hidden = false;
+  results.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  const steps = ["Splitting text into claims…", "Applying demo labels…", "Adding placeholder confidence…", "Preparing your report…"];
+  steps.forEach((s, i) => timers.push(setTimeout(() => { $("#loader-step").textContent = s; }, i * 650)));
+  timers.push(setTimeout(() => {
+    renderReport(buildMock(text), report);
+    loader.hidden = true; timers = [];
+    setBusy(false);
+  }, 2700));
+});
+
+/* mobile menu */
+const toggle = $(".nav-toggle"), menu = $("#menu");
+toggle.addEventListener("click", () => {
+  const open = menu.classList.toggle("open");
+  toggle.setAttribute("aria-expanded", open);
+});
+menu.addEventListener("click", (e) => e.target.tagName === "A" && menu.classList.remove("open"));
+
+updateCount();
+renderReport(SAMPLE, $("#sample-report"));
+
+</script>
+</body>
+</html>
